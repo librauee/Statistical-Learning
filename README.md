@@ -26,3 +26,11 @@
 * Chapter20  潜在狄利克雷分配
 * Chapter21  PageRank算法
 * Chapter22  无监督学习方法总结
+
+
+
+## 参考资料
+
+* 统计学习方法    
+* 数学之美
+* [《统计学习方法》的代码实现](https://github.com/fengdu78/lihang-code)
