@@ -1,5 +1,4 @@
-
-![Hits](http://www.smirkcao.info/hit_gits/librauee/Statistical-Learning/edit/master/README.md)
+﻿
 # 统计学习方法（第二版） 李航
 
  每一单元的**知识要点整理**，**课后习题解答**，以及**算法的Python实现**
