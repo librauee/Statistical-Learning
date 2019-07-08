@@ -216,3 +216,171 @@ $$
 $$
 f(x)=sign\left(\sum_{i=1}^N\alpha_i^*y_iK(x,x_i)+b^*\right)
 $$
+
+## SMO算法
+
+### 问题描述
+
+$$
+\begin{aligned}
+\min_\alpha\ &\frac{1}{2}\sum_{i=1}^N\sum_{j=1}^N\alpha_i\alpha_jy_iy_jK(x_i,x_j)-\sum_{i=1}^N\alpha_i\\
+s.t.\ \ \ &\sum_{i=1}^N\alpha_iy_i=0\\
+&0\leqslant \alpha_i \leqslant C,i=1,2,\dots,N
+\end{aligned}
+$$
+
+这个问题中，变量是$\alpha$，一个变量$\alpha_i$对应一个样本点$(x_i,y_i)$，变量总数等于$N$
+
+
+
+### KKT 条件
+
+  * KKT条件是该最优化问题的充分必要条件
+  * 简单来说，约束最优化问题包含$\leqslant0$，和$=0$两种约束条件
+$$
+\begin{aligned} 
+	 \min_{x \in R^n}\quad &f(x) \\
+	 s.t.\quad&c_i(x) \leqslant 0 , i=1,2,\ldots,k\\
+	 &h_j(x) = 0 , j=1,2,\ldots,l
+	\end{aligned}
+$$
+* 引入广义拉格朗日函数
+
+$$
+L(x,\alpha,\beta) = f(x) + \sum_{i=0}^k \alpha_ic_i(x) + \sum_{j=1}^l \beta_jh_j(x)
+$$
+
+* 在KKT的条件下，原始问题和对偶问题的最优值相等
+$$
+∇_xL(x^∗,α^∗,β^∗)=0\\
+∇_αL(x^∗,α^∗,β^∗)=0\\
+∇_βL(x^∗,α^∗,β^∗)=0\\
+α_i^∗c_i(x^*)=0,i=1,2,…,k\\
+c_i(x^*)≤0,i=1,2,…,k\\
+α^∗_i≥0,i=1,2,…,k\\
+h_j(x^∗)=0,j=1,2,…,l
+$$
+* 前面三个条件是由解析函数的知识，对于各个变量的偏导数为0，后面四个条件就是原始问题的约束条件以及拉格朗日乘子需要满足的约束,第四个条件是**KKT的对偶互补条件**
+
+### 算法内容
+
+整个SMO算法包括两**部分**：
+
+1. 求解两个变量二次规划的解析方法
+1. 选择变量的启发式方法
+
+$$
+\begin{aligned}
+\min_\alpha\ &\frac{1}{2}\sum_{i=1}^N\sum_{j=1}^N\alpha_i\alpha_jy_iy_jK(x_i, x_j)-\sum_{i=1}^N\alpha_i\\
+s.t.\ \ \ &\sum_{i=1}^N\alpha_iy_i=0\\
+&0\leqslant \alpha_i \leqslant C,i=1,2,\dots,N
+\end{aligned}
+$$
+
+
+
+#### Part I
+
+* 两个变量二次规划求解
+* 选择两个变量$\alpha_1,\alpha_2​$，由等式约束可以得到$\alpha_1=-y_1\sum\limits_{i=2}^N\alpha_iy_i​$，所以这个问题等价于一个单变量优化问题
+
+$$
+\begin{aligned}
+\min_{\alpha_1,\alpha_2} W(\alpha_1,\alpha_2)=&\frac{1}{2}K_{11}\alpha_1^2+\frac{1}{2}K_{22}\alpha_2^2+y_1y_2K_{12}\alpha_1\alpha_2\\
+&-(\alpha_1+\alpha_2)+y_1\alpha_1\sum_{i=3}^Ny_i\alpha_iK_{il}+y_2\alpha_2\sum_{i=3}^Ny_i\alpha_iK_{i2}\\
+s.t. \ \ \ &\alpha_1y_1+\alpha_2y_2=-\sum_{i=3}^Ny_i\alpha_i=\varsigma\\
+&0\leqslant\alpha_i\leqslant C, i=1,2
+\end{aligned}
+$$
+
+* 上面存在两个约束：
+1. **线性**等式约束
+2. 边界约束
+* 根据简单的线性规划可以得出**等式约束使得$(\alpha_1,\alpha_2)$在平行于盒子$[0,C]\times [0,C]$的对角线的直线上**
+
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190627105606348.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2x5YzQ0ODEzNDE4,size_16,color_FFFFFF,t_70)
+* 首先求沿着约束方向未经剪辑，即不考虑约束$0\leqslant\alpha_i\leqslant C$时$\alpha_2$的最优解，然后再求剪辑后的解
+$$E_i=g(x_i)-y_i=(\sum_{j=1}^N\alpha_jy_jK(x_i, x_j)+b)-y_i,i=1,2$$
+$E_i$为函数$g(x)$对输入的预测值与真实输出$y_i$的差
+#### Part II
+
+* 变量的选择方法
+
+1. 第一个变量$\alpha_1$外层循环，寻找违反KKT条件**最严重**的样本点
+2. 第二个变量$\alpha_2$内层循环，希望能使$\alpha_2$有足够大的变化
+3. 计算阈值$b$和差值$E_i$
+
+
+
+> 输入：训练数据集$T={(x_1,y_1),(x_2,y_2),\dots, (x_N,y_N)}$，其中$x_i\in\mathcal X=\bf R^n, y_i\in\mathcal Y=\{-1,+1\}, i=1,2,\dots,N$,精度$\epsilon$
+>
+> 输出：近似解$\hat\alpha$
+>
+> 1. 取初值$\alpha_0=0$，令$k=0$
+>
+> 1. **选取**优化变量$\alpha_1^{(k)},\alpha_2^{(k)}$，解析求解两个变量的最优化问题，求得最优解$\alpha_1^{(k+1)},\alpha_2^{(k+1)}$，更新$\alpha$为$\alpha^{k+1}$
+>
+> 1. 若在精度$\epsilon$范围内满足停止条件
+>    $$
+>    \sum_{i=1}^{N}\alpha_iy_i=0\\
+>    0\leqslant\alpha_i\leqslant C,i=1,2,\dots,N\\
+>    y_i\cdot g(x_i)=
+>    \begin{cases}
+>    \geqslant1,\{x_i|\alpha_i=0\}\\
+>    =1,\{x_i|0<\alpha_i<C\}\\
+>    \leqslant1,\{x_i|\alpha_i=C\}
+>    \end{cases}\\
+>    g(x_i)=\sum_{j=1}^{N}\alpha_jy_jK(x_j,x_i)+b
+>    $$
+>    则转4,否则，$k=k+1$转2
+>
+> 1. 取$\hat\alpha=\alpha^{(k+1)}$
+
+# 习题解答
+
+* 1.**比较感知机的对偶形式与线性可分支持向量机的对偶形式**
+   * 感知机的对偶形式
+   $f(x)=sign\left(\sum_{j=1}^N\alpha_jy_jx_j\cdot x+b\right),
+\alpha=(\alpha_1,\alpha_2,\cdots,\alpha_N)^T$ 
+   * 线性可分支持向量机的对偶形式
+     $f(x)=sign\left(\sum_{i=1}^N\alpha_i^*y_ix_i\cdot x+b^*\right),
+\alpha^*=(\alpha_1^*,\alpha_2^*,\cdots,\alpha_N^*)^T$ 
+感知机学习算法的原始形式和对偶形式与线性可分支持向量机学习算法的原始形式和对偶形式相对应。在线性可分支持向量机的对偶形式中,$w$也是被表示为实例 $x_i$和标记$y_i$的线性组合的形式
+$$w=\sum_{i=1}^{N}\alpha_iy_ix_i$$
+而它们的偏置$b$的形式不同，前者$b=\sum_{i=1}^{N}\alpha_iy_i$,而后者$b^*=y_j\color{black}-\sum_{i=1}^{N}\alpha_i^*y_i(x_i\cdot x_j)$
+* 2.**已知正例点$x_1=(1,2)^T$，$x_2=(2,3)^T$，$x_3=(3,3)^T$,负例点$x_4=(2,1)^T$，$x_5=(3,2)^T$，
+试求最大间隔分离超平面和分类决策函数，并在图上画出分离超平面、间隔边界及支持向量**
+  * 根据书中算法，计算可得$w_1=-1$,$w_2=2$,$b=-2$,即最大间隔分离超平面为
+  $$-x^{(1)}+2x^{(2)}-2=0$$
+  分类决策函数为
+  $$f(x)=sign(-x^{(1)}+2x^{(2)}-2)$$
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190708102330284.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2x5YzQ0ODEzNDE4,size_16,color_FFFFFF,t_70#pic_center)
+
+* 3.**线性支持向量机还可以定义为以下形式：**
+
+$$\min_{w,b,\xi}{\frac{1}{2}\|w\|^2}+C\sum^N_{i=1}\xi_i^2\\s.t.{\quad}y_i(w{\cdot}x_i+b)\ge1-\xi_i,\,i=1,2,\cdots,N\\\xi_i\ge0,\,i=1,2,\cdots,N$$
+      **试求其对偶形式**
+   * 首先求得原始化最优问题的拉格朗日函数是： 
+  $L(w,b,\alpha,\xi,μ)=\frac{1}{2}\left\|w\right\|^2+C\sum_{i=1}^N\xi_i^2-\sum_{i=1}^N\alpha_i(y_i(w\cdot x_i+b-1)+\xi_i)-\sum_{i=1}^Nμ_i\xi_i$
+  * 对偶问题是拉格朗日的极大极小问题。首先求$L(w,b,\alpha,\xi,μ)$对$w,b,\xi$的极小,即对该三项求偏导，得
+  $$
+  w=\sum_{i=1}^{N}\alpha_iy_ix_i\\
+ \sum_{i=1}^N\alpha_iy_i=0\\
+ 2C\xi_i-\alpha_i-μ_i=0
+  $$
+  将上述带入拉格朗日函数，得
+  $$-\frac{1}{2}\sum_{i=1}^N\sum_{j=1}^N\alpha_i\alpha_jy_iy_j(x_i\cdot x_j)-C\sum_{i=1}^N\xi_i^2+\sum_{i=1}^N\alpha_i\\
+  -\frac{1}{2}\sum_{i=1}^N\sum_{j=1}^N\alpha_i\alpha_jy_iy_j(x_i\cdot x_j)-\frac{1}{4C}\sum_{i=1}^N(\alpha_i+μ_i)^2+\sum_{i=1}^N\alpha_i$$
+* 4.**证明内积的正整数幂函数$K(x,z)=(x{\cdot}z)^p$是正定核函数，这里$p$是正整数，$x,z{\in}R^n$**
+  * 要证明正整数幂函数是正定核函数，只需证明其对应得Gram矩阵$K=[K(x_i,x_j)]_{m\times m}$是半正定矩阵
+  * 对任意$c_1,c_2…c_m\in R$,有
+
+       $$
+       \begin{aligned}
+       \sum_{i,j=1}^{m}c_ic_jK(x_i,x_j)\\
+       =&\sum_{i,j=1}^{m}c_ic_j(x_i\cdot x_j)^p\\
+       =&(\sum_{i=1}^{m}c_ix_i)(\sum_{j=1}^{m}c_jx_j)(x_ix_j)^{p-1}\\
+       =&||\sum_{i=1}^{m}c_ix_i||^2(x_ix_j)^{p-1}
+       \end{aligned}
+       $$
+       * 由于p大于等于1，该式子也大于等于0，即Gram矩阵半正定，所以正整数的幂函数是正定核函数
