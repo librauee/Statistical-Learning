@@ -36,3 +36,17 @@
 * 数学之美 by吴军
 * 机器学习 by周志华
 * [《统计学习方法》的代码实现](https://github.com/fengdu78/lihang-code)
+
+
+![github](https://raw.githubusercontent.com/chenjiandongx/mzitu/master/images/forkstar.png "github")
+
+
+
+
+欢迎关注我的微信公众号，记录学习，记录生活~
+
+!
+[github](https://github.com/librauee/Reptile/blob/master/image/vx_code.jpg)
+    
+
+[Click_into_My_CSDN](http://blog.csdn.net/lyc44813418)
